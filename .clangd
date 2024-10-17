@@ -1,0 +1,8 @@
+CompileFlags:
+  Add:
+    - --cuda-path=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6
+    - --cuda-gpu-arch=sm_75
+  Remove:
+    - --generate-code*
+    - -forward-unknown-to-host-compiler
+    - -Xcompiler*
