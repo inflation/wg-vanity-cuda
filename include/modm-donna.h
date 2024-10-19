@@ -15,30 +15,46 @@
    0xfffffffffffffffffffffffffffffffeb2106215d086329a7ed9ce5a30a2c131b
 */
 
+#pragma once
+
 #include <cstdint>
-#include <cstring>
 
 #include <cuda_runtime.h>
 
-#include "helper.h"
+#include "common.h"
 
-#define bignum256modm_bits_per_limb 30
-#define bignum256modm_limb_size 9
+namespace curve25519 {
+
+constexpr auto bignum256modm_bits_per_limb = 30;
+constexpr auto bignum256modm_limb_size = 9;
 
 typedef uint32_t bignum256modm_element_t;
 typedef bignum256modm_element_t bignum256modm[9];
 
-static const bignum256modm modm_m = {0x1cf5d3ed, 0x20498c69, 0x2f79cd65,
-                                     0x37be77a8, 0x00000014, 0x00000000,
-                                     0x00000000, 0x00000000, 0x00001000};
+constexpr bignum256modm modm_m = {0x1cf5d3ed, 0x20498c69, 0x2f79cd65,
+                                  0x37be77a8, 0x00000014, 0x00000000,
+                                  0x00000000, 0x00000000, 0x00001000};
 
-static const bignum256modm modm_mu = {0x0a2c131b, 0x3673968c, 0x06329a7e,
-                                      0x01885742, 0x3fffeb21, 0x3fffffff,
-                                      0x3fffffff, 0x3fffffff, 0x000fffff};
+constexpr bignum256modm modm_mu = {0x0a2c131b, 0x3673968c, 0x06329a7e,
+                                   0x01885742, 0x3fffeb21, 0x3fffffff,
+                                   0x3fffffff, 0x3fffffff, 0x000fffff};
 
-static bignum256modm_element_t lt_modm(bignum256modm_element_t a,
-                                       bignum256modm_element_t b) {
+__host__ __device__ static bignum256modm_element_t
+lt_modm(bignum256modm_element_t a, bignum256modm_element_t b) {
   return (a - b) >> 31;
+}
+
+__host__ __device__ static inline uint32_t U8TO32_LE(const unsigned char *p) {
+  return (((uint32_t)(p[0])) | ((uint32_t)(p[1]) << 8) |
+          ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24));
+}
+
+__host__ __device__ static inline void U32TO8_LE(unsigned char *p,
+                                                 const uint32_t v) {
+  p[0] = (unsigned char)(v);
+  p[1] = (unsigned char)(v >> 8);
+  p[2] = (unsigned char)(v >> 16);
+  p[3] = (unsigned char)(v >> 24);
 }
 
 /* see HAC, Alg. 14.42 Step 4 */
@@ -606,91 +622,109 @@ __host__ __device__ static void sub256_modm_batch(bignum256modm out,
     carry = (out[i] >> 31);
     out[i] &= 0x3fffffff;
     i++;
+    [[fallthrough]];
   case 7:
     out[i] = (a[i] - b[i]) - carry;
     carry = (out[i] >> 31);
     out[i] &= 0x3fffffff;
     i++;
+    [[fallthrough]];
   case 6:
     out[i] = (a[i] - b[i]) - carry;
     carry = (out[i] >> 31);
     out[i] &= 0x3fffffff;
     i++;
+    [[fallthrough]];
   case 5:
     out[i] = (a[i] - b[i]) - carry;
     carry = (out[i] >> 31);
     out[i] &= 0x3fffffff;
     i++;
+    [[fallthrough]];
   case 4:
     out[i] = (a[i] - b[i]) - carry;
     carry = (out[i] >> 31);
     out[i] &= 0x3fffffff;
     i++;
+    [[fallthrough]];
   case 3:
     out[i] = (a[i] - b[i]) - carry;
     carry = (out[i] >> 31);
     out[i] &= 0x3fffffff;
     i++;
+    [[fallthrough]];
   case 2:
     out[i] = (a[i] - b[i]) - carry;
     carry = (out[i] >> 31);
     out[i] &= 0x3fffffff;
     i++;
+    [[fallthrough]];
   case 1:
     out[i] = (a[i] - b[i]) - carry;
     carry = (out[i] >> 31);
     out[i] &= 0x3fffffff;
     i++;
+    [[fallthrough]];
   case 0:
+    [[fallthrough]];
   default:
     out[i] = (a[i] - b[i]) - carry;
   }
 }
 
 /* is a < b */
-static int lt256_modm_batch(const bignum256modm a, const bignum256modm b,
-                            size_t limbsize) {
+__host__ __device__ static int lt256_modm_batch(const bignum256modm a,
+                                                const bignum256modm b,
+                                                size_t limbsize) {
   switch (limbsize) {
   case 8:
     if (a[8] > b[8])
       return 0;
     if (a[8] < b[8])
       return 1;
+    [[fallthrough]];
   case 7:
     if (a[7] > b[7])
       return 0;
     if (a[7] < b[7])
       return 1;
+    [[fallthrough]];
   case 6:
     if (a[6] > b[6])
       return 0;
     if (a[6] < b[6])
       return 1;
+    [[fallthrough]];
   case 5:
     if (a[5] > b[5])
       return 0;
     if (a[5] < b[5])
       return 1;
+    [[fallthrough]];
   case 4:
     if (a[4] > b[4])
       return 0;
     if (a[4] < b[4])
       return 1;
+    [[fallthrough]];
   case 3:
     if (a[3] > b[3])
       return 0;
     if (a[3] < b[3])
       return 1;
+    [[fallthrough]];
   case 2:
     if (a[2] > b[2])
       return 0;
     if (a[2] < b[2])
       return 1;
+    [[fallthrough]];
   case 1:
     if (a[1] > b[1])
       return 0;
     if (a[1] < b[1])
       return 1;
+    [[fallthrough]];
   case 0:
     if (a[0] > b[0])
       return 0;
@@ -701,49 +735,58 @@ static int lt256_modm_batch(const bignum256modm a, const bignum256modm b,
 }
 
 /* is a <= b */
-static int lte256_modm_batch(const bignum256modm a, const bignum256modm b,
-                             size_t limbsize) {
+__host__ __device__ static int lte256_modm_batch(const bignum256modm a,
+                                                 const bignum256modm b,
+                                                 size_t limbsize) {
   switch (limbsize) {
   case 8:
     if (a[8] > b[8])
       return 0;
     if (a[8] < b[8])
       return 1;
+    [[fallthrough]];
   case 7:
     if (a[7] > b[7])
       return 0;
     if (a[7] < b[7])
       return 1;
+    [[fallthrough]];
   case 6:
     if (a[6] > b[6])
       return 0;
     if (a[6] < b[6])
       return 1;
+    [[fallthrough]];
   case 5:
     if (a[5] > b[5])
       return 0;
     if (a[5] < b[5])
       return 1;
+    [[fallthrough]];
   case 4:
     if (a[4] > b[4])
       return 0;
     if (a[4] < b[4])
       return 1;
+    [[fallthrough]];
   case 3:
     if (a[3] > b[3])
       return 0;
     if (a[3] < b[3])
       return 1;
+    [[fallthrough]];
   case 2:
     if (a[2] > b[2])
       return 0;
     if (a[2] < b[2])
       return 1;
+    [[fallthrough]];
   case 1:
     if (a[1] > b[1])
       return 0;
     if (a[1] < b[1])
       return 1;
+    [[fallthrough]];
   case 0:
     if (a[0] > b[0])
       return 0;
@@ -754,7 +797,7 @@ static int lte256_modm_batch(const bignum256modm a, const bignum256modm b,
 }
 
 /* is a == 0 */
-static int iszero256_modm_batch(const bignum256modm a) {
+__host__ __device__ static int iszero256_modm_batch(const bignum256modm a) {
   size_t i;
   for (i = 0; i < 9; i++)
     if (a[i])
@@ -763,7 +806,7 @@ static int iszero256_modm_batch(const bignum256modm a) {
 }
 
 /* is a == 1 */
-static int isone256_modm_batch(const bignum256modm a) {
+__host__ __device__ static int isone256_modm_batch(const bignum256modm a) {
   size_t i;
   if (a[0] != 1)
     return 0;
@@ -774,7 +817,8 @@ static int isone256_modm_batch(const bignum256modm a) {
 }
 
 /* can a fit in to (at most) 128 bits */
-static int isatmost128bits256_modm_batch(const bignum256modm a) {
+__host__ __device__ static int
+isatmost128bits256_modm_batch(const bignum256modm a) {
   uint32_t mask = ((a[8]) |              /*  16 */
                    (a[7]) |              /*  46 */
                    (a[6]) |              /*  76 */
@@ -783,3 +827,5 @@ static int isatmost128bits256_modm_batch(const bignum256modm a) {
 
   return (mask == 0);
 }
+
+} // namespace curve25519

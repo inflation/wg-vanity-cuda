@@ -5,17 +5,18 @@
         32 bit integer curve25519 implementation
 */
 
-#ifndef CURVE25519_DONNA_H
-#define CURVE25519_DONNA_H
+#pragma once
 
-#include "helper.h"
+#include <cstdint>
+
 #include <cuda_runtime.h>
 
-typedef uint32_t bignum25519[10];
-typedef uint32_t bignum25519align16[12];
+#include "common.h"
 
-static const uint32_t reduce_mask_25 = (1 << 25) - 1;
-static const uint32_t reduce_mask_26 = (1 << 26) - 1;
+namespace curve25519 {
+
+constexpr uint32_t reduce_mask_25 = (1 << 25) - 1;
+constexpr uint32_t reduce_mask_26 = (1 << 26) - 1;
 
 /* out = in */
 __host__ __device__ static void curve25519_copy(bignum25519 out,
@@ -122,12 +123,12 @@ __host__ __device__ static void curve25519_add_reduce(bignum25519 out,
 }
 
 /* multiples of p */
-static const uint32_t twoP0 = 0x07ffffda;
-static const uint32_t twoP13579 = 0x03fffffe;
-static const uint32_t twoP2468 = 0x07fffffe;
-static const uint32_t fourP0 = 0x0fffffb4;
-static const uint32_t fourP13579 = 0x07fffffc;
-static const uint32_t fourP2468 = 0x0ffffffc;
+constexpr uint32_t twoP0 = 0x07ffffda;
+constexpr uint32_t twoP13579 = 0x03fffffe;
+constexpr uint32_t twoP2468 = 0x07fffffe;
+constexpr uint32_t fourP0 = 0x0fffffb4;
+constexpr uint32_t fourP13579 = 0x07fffffc;
+constexpr uint32_t fourP2468 = 0x0ffffffc;
 
 /* out = a - b */
 __host__ __device__ static void
@@ -267,8 +268,8 @@ __host__ __device__ static void curve25519_neg(bignum25519 out,
 
 /* out = a * b */
 #define curve25519_mul_noinline curve25519_mul
-static void curve25519_mul(bignum25519 out, const bignum25519 a,
-                           const bignum25519 b) {
+__host__ __device__ static void
+curve25519_mul(bignum25519 out, const bignum25519 a, const bignum25519 b) {
   uint32_t r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
   uint32_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9;
   uint64_t m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, c;
@@ -407,7 +408,8 @@ static void curve25519_mul(bignum25519 out, const bignum25519 a,
 }
 
 /* out = in*in */
-static void curve25519_square(bignum25519 out, const bignum25519 in) {
+__host__ __device__ static void curve25519_square(bignum25519 out,
+                                                  const bignum25519 in) {
   uint32_t r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
   uint32_t d6, d7, d8, d9;
   uint64_t m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, c;
@@ -509,8 +511,8 @@ static void curve25519_square(bignum25519 out, const bignum25519 in) {
 }
 
 /* out = in ^ (2 * count) */
-static void curve25519_square_times(bignum25519 out, const bignum25519 in,
-                                    int count) {
+__host__ __device__ static void
+curve25519_square_times(bignum25519 out, const bignum25519 in, int count) {
   uint32_t r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
   uint32_t d6, d7, d8, d9;
   uint64_t m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, c;
@@ -614,7 +616,8 @@ static void curve25519_square_times(bignum25519 out, const bignum25519 in,
 }
 
 /* Take a little-endian, 32-byte number and expand it into polynomial form */
-static void curve25519_expand(bignum25519 out, const unsigned char in[32]) {
+__host__ __device__ static void curve25519_expand(bignum25519 out,
+                                                  const unsigned char in[32]) {
   static const union {
     uint8_t b[2];
     uint16_t s;
@@ -660,7 +663,8 @@ static void curve25519_expand(bignum25519 out, const unsigned char in[32]) {
 /* Take a fully reduced polynomial form number and contract it into a
  * little-endian, 32-byte array
  */
-static void curve25519_contract(unsigned char out[32], const bignum25519 in) {
+__host__ __device__ static void curve25519_contract(unsigned char out[32],
+                                                    const bignum25519 in) {
   bignum25519 f;
   curve25519_copy(f, in);
 
@@ -818,4 +822,4 @@ curve25519_swap_conditional(bignum25519 a, bignum25519 b, uint32_t iswap) {
   b[9] ^= x9;
 }
 
-#endif // CURVE25519_DONNA_H
+} // namespace curve25519

@@ -1,4 +1,5 @@
 build/
 .cache/
 .vscode/
+.vs/
 compile_commands.json

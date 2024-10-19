@@ -8,20 +8,25 @@
                 Bo-Yin Yang
 */
 
-#ifndef ED25519_DONNA_H
-#define ED25519_DONNA_H
+#pragma once
 
-#include "curve25519-donna-helpers.h"
+#include <cstdlib>
+
+#include <cuda_runtime.h>
+
+#include "common.h"
 #include "curve25519-donna.h"
+#include "ed25519-donna-tables.h"
 #include "modm-donna.h"
 
-typedef unsigned char hash_512bits[64];
+namespace curve25519 {
 
 /*
         Timing safe memory compare
 */
-static int ed25519_verify(const unsigned char *x, const unsigned char *y,
-                          size_t len) {
+__host__ __device__ static int ed25519_verify(const unsigned char* x,
+                                              const unsigned char* y,
+                                              size_t len) {
   size_t differentbits = 0;
   while (len--)
     differentbits |= (*x++ ^ *y++);
@@ -29,35 +34,11 @@ static int ed25519_verify(const unsigned char *x, const unsigned char *y,
 }
 
 /*
- * Arithmetic on the twisted Edwards curve -x^2 + y^2 = 1 + dx^2y^2
- * with d = -(121665/121666) =
- * 37095705934669439343138083508754565189542113879843219016388785533085940283555
- * Base point:
- * (15112221349535400772501151409588531511454012693041857206046113283949847762202,46316835694926478169428394003475163141307993866256225615783033603165251855960);
- */
-
-typedef struct ge25519_t {
-  bignum25519 x, y, z, t;
-} ge25519;
-
-typedef struct ge25519_p1p1_t {
-  bignum25519 x, y, z, t;
-} ge25519_p1p1;
-
-typedef struct ge25519_niels_t {
-  bignum25519 ysubx, xaddy, t2d;
-} ge25519_niels;
-
-typedef struct ge25519_pniels_t {
-  bignum25519 ysubx, xaddy, z, t2d;
-} ge25519_pniels;
-
-/*
  * In:  b =   2^5 - 2^0
  * Out: b = 2^250 - 2^0
  */
-__host__ __device__ static void
-curve25519_pow_two5mtwo0_two250mtwo0(bignum25519 b) {
+__host__ __device__ static void curve25519_pow_two5mtwo0_two250mtwo0(
+    bignum25519 b) {
   bignum25519 ALIGN(16) t0, c;
 
   /* 2^5  - 2^0 */ /* b */
@@ -117,22 +98,23 @@ __host__ __device__ static void curve25519_pow_two252m3(bignum25519 two252m3,
         conversions
 */
 
-__host__ __device__ static void ge25519_p1p1_to_partial(ge25519 *r,
-                                                        const ge25519_p1p1 *p) {
+__host__ __device__ static void ge25519_p1p1_to_partial(ge25519* r,
+                                                        const ge25519_p1p1* p) {
   curve25519_mul(r->x, p->x, p->t);
   curve25519_mul(r->y, p->y, p->z);
   curve25519_mul(r->z, p->z, p->t);
 }
 
-__host__ __device__ static void ge25519_p1p1_to_full(ge25519 *r,
-                                                     const ge25519_p1p1 *p) {
+__host__ __device__ static void ge25519_p1p1_to_full(ge25519* r,
+                                                     const ge25519_p1p1* p) {
   curve25519_mul(r->x, p->x, p->t);
   curve25519_mul(r->y, p->y, p->z);
   curve25519_mul(r->z, p->z, p->t);
   curve25519_mul(r->t, p->x, p->y);
 }
 
-static void ge25519_full_to_pniels(ge25519_pniels *p, const ge25519 *r) {
+__host__ __device__ static void ge25519_full_to_pniels(ge25519_pniels* p,
+                                                       const ge25519* r) {
   curve25519_sub(p->ysubx, r->y, r->x);
   curve25519_add(p->xaddy, r->y, r->x);
   curve25519_copy(p->z, r->z);
@@ -143,8 +125,9 @@ static void ge25519_full_to_pniels(ge25519_pniels *p, const ge25519 *r) {
         adding & doubling
 */
 
-static void ge25519_add_p1p1(ge25519_p1p1 *r, const ge25519 *p,
-                             const ge25519 *q) {
+__host__ __device__ static void ge25519_add_p1p1(ge25519_p1p1* r,
+                                                 const ge25519* p,
+                                                 const ge25519* q) {
   bignum25519 a, b, c, d, t, u;
 
   curve25519_sub(a, p->y, p->x);
@@ -163,7 +146,8 @@ static void ge25519_add_p1p1(ge25519_p1p1 *r, const ge25519 *p,
   curve25519_sub_after_basic(r->t, d, c);
 }
 
-static void ge25519_double_p1p1(ge25519_p1p1 *r, const ge25519 *p) {
+__host__ __device__ static void ge25519_double_p1p1(ge25519_p1p1* r,
+                                                    const ge25519* p) {
   bignum25519 a, b, c;
 
   curve25519_square(a, p->x);
@@ -178,11 +162,12 @@ static void ge25519_double_p1p1(ge25519_p1p1 *r, const ge25519 *p) {
   curve25519_sub_after_basic(r->t, c, r->z);
 }
 
-static void ge25519_nielsadd2_p1p1(ge25519_p1p1 *r, const ge25519 *p,
-                                   const ge25519_niels *q,
-                                   unsigned char signbit) {
-  const bignum25519 *qb = (const bignum25519 *)q;
-  bignum25519 *rb = (bignum25519 *)r;
+__host__ __device__ static void ge25519_nielsadd2_p1p1(ge25519_p1p1* r,
+                                                       const ge25519* p,
+                                                       const ge25519_niels* q,
+                                                       unsigned char signbit) {
+  const bignum25519* qb = (const bignum25519*)q;
+  bignum25519* rb = (bignum25519*)r;
   bignum25519 a, b, c;
 
   curve25519_sub(a, p->y, p->x);
@@ -199,11 +184,12 @@ static void ge25519_nielsadd2_p1p1(ge25519_p1p1 *r, const ge25519 *p,
                  c); /* t for +, z for - */
 }
 
-static void ge25519_pnielsadd_p1p1(ge25519_p1p1 *r, const ge25519 *p,
-                                   const ge25519_pniels *q,
-                                   unsigned char signbit) {
-  const bignum25519 *qb = (const bignum25519 *)q;
-  bignum25519 *rb = (bignum25519 *)r;
+__host__ __device__ static void ge25519_pnielsadd_p1p1(ge25519_p1p1* r,
+                                                       const ge25519* p,
+                                                       const ge25519_pniels* q,
+                                                       unsigned char signbit) {
+  const bignum25519* qb = (const bignum25519*)q;
+  bignum25519* rb = (bignum25519*)r;
   bignum25519 a, b, c;
 
   curve25519_sub(a, p->y, p->x);
@@ -221,25 +207,29 @@ static void ge25519_pnielsadd_p1p1(ge25519_p1p1 *r, const ge25519 *p,
                  c); /* t for +, z for - */
 }
 
-static void ge25519_double_partial(ge25519 *r, const ge25519 *p) {
+__host__ __device__ static void ge25519_double_partial(ge25519* r,
+                                                       const ge25519* p) {
   ge25519_p1p1 t;
   ge25519_double_p1p1(&t, p);
   ge25519_p1p1_to_partial(r, &t);
 }
 
-static void ge25519_double(ge25519 *r, const ge25519 *p) {
+__host__ __device__ static void ge25519_double(ge25519* r, const ge25519* p) {
   ge25519_p1p1 t;
   ge25519_double_p1p1(&t, p);
   ge25519_p1p1_to_full(r, &t);
 }
 
-static void ge25519_add(ge25519 *r, const ge25519 *p, const ge25519 *q) {
+__host__ __device__ static void ge25519_add(ge25519* r,
+                                            const ge25519* p,
+                                            const ge25519* q) {
   ge25519_p1p1 t;
   ge25519_add_p1p1(&t, p, q);
   ge25519_p1p1_to_full(r, &t);
 }
 
-static void ge25519_nielsadd2(ge25519 *r, const ge25519_niels *q) {
+__host__ __device__ static void ge25519_nielsadd2(ge25519* r,
+                                                  const ge25519_niels* q) {
   bignum25519 a, b, c, e, f, g, h;
 
   curve25519_sub(a, r->y, r->x);
@@ -258,8 +248,9 @@ static void ge25519_nielsadd2(ge25519 *r, const ge25519_niels *q) {
   curve25519_mul(r->t, e, h);
 }
 
-static void ge25519_pnielsadd(ge25519_pniels *r, const ge25519 *p,
-                              const ge25519_pniels *q) {
+__host__ __device__ static void ge25519_pnielsadd(ge25519_pniels* r,
+                                                  const ge25519* p,
+                                                  const ge25519_pniels* q) {
   bignum25519 a, b, c, x, y, z, t;
 
   curve25519_sub(a, p->y, p->x);
@@ -287,7 +278,8 @@ static void ge25519_pnielsadd(ge25519_pniels *r, const ge25519 *p,
         pack & unpack
 */
 
-static void ge25519_pack(unsigned char r[32], const ge25519 *p) {
+__host__ __device__ static void ge25519_pack(unsigned char r[32],
+                                             const ge25519* p) {
   bignum25519 tx, ty, zi;
   unsigned char parity[32];
   curve25519_recip(zi, p->z);
@@ -298,8 +290,9 @@ static void ge25519_pack(unsigned char r[32], const ge25519 *p) {
   r[31] ^= ((parity[0] & 1) << 7);
 }
 
-static int ge25519_unpack_negative_vartime(ge25519 *r,
-                                           const unsigned char p[32]) {
+__host__ __device__ static int ge25519_unpack_negative_vartime(
+    ge25519* r,
+    const unsigned char p[32]) {
   static const unsigned char zero[32] = {0};
   static const bignum25519 one = {1};
   unsigned char parity = p[31] >> 7;
@@ -358,9 +351,11 @@ static int ge25519_unpack_negative_vartime(ge25519 *r,
 #define S2_TABLE_SIZE (1 << (S2_SWINDOWSIZE - 2))
 
 /* computes [s1]p1 + [s2]basepoint */
-static void ge25519_double_scalarmult_vartime(ge25519 *r, const ge25519 *p1,
-                                              const bignum256modm s1,
-                                              const bignum256modm s2) {
+__host__ __device__ static void ge25519_double_scalarmult_vartime(
+    ge25519* r,
+    const ge25519* p1,
+    const bignum256modm s1,
+    const bignum256modm s2) {
   signed char slide1[256], slide2[256];
   ge25519_pniels pre1[S1_TABLE_SIZE];
   ge25519 d1;
@@ -406,15 +401,16 @@ static void ge25519_double_scalarmult_vartime(ge25519 *r, const ge25519 *p1,
   ge25519_p1p1_to_full(r, &t);
 }
 
-#if !defined(HAVE_GE25519_SCALARMULT_BASE_CHOOSE_NIELS)
-
-static uint32_t ge25519_windowb_equal(uint32_t b, uint32_t c) {
+__host__ __device__ static uint32_t ge25519_windowb_equal(uint32_t b,
+                                                          uint32_t c) {
   return ((b ^ c) - 1) >> 31;
 }
 
-static void ge25519_scalarmult_base_choose_niels(ge25519_niels *t,
-                                                 const uint8_t table[256][96],
-                                                 uint32_t pos, signed char b) {
+__host__ __device__ static void ge25519_scalarmult_base_choose_niels(
+    ge25519_niels* t,
+    const uint8_t table[256][96],
+    uint32_t pos,
+    signed char b) {
   bignum25519 neg;
   uint32_t sign = (uint32_t)((unsigned char)b >> 7);
   uint32_t mask = ~(sign - 1);
@@ -442,11 +438,11 @@ static void ge25519_scalarmult_base_choose_niels(ge25519_niels *t,
   curve25519_swap_conditional(t->t2d, neg, sign);
 }
 
-#endif /* HAVE_GE25519_SCALARMULT_BASE_CHOOSE_NIELS */
-
 /* computes [s]basepoint */
-static void ge25519_scalarmult_base_niels(
-    ge25519 *r, const uint8_t basepoint_table[256][96], const bignum256modm s) {
+__host__ __device__ static void ge25519_scalarmult_base_niels(
+    ge25519* r,
+    const uint8_t basepoint_table[256][96],
+    const bignum256modm s) {
   signed char b[64];
   uint32_t i;
   ge25519_niels t;
@@ -476,4 +472,4 @@ static void ge25519_scalarmult_base_niels(
   }
 }
 
-#endif // ED25519_DONNA_H
+} // namespace curve25519
