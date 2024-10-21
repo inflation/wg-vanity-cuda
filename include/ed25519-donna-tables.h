@@ -4,7 +4,7 @@
 
 namespace curve25519 {
 
-CONSTANT ge25519 ALIGN(16) ge25519_basepoint = {
+__constant__ __align__(16) ge25519 ge25519_basepoint = {
     {0x0325d51a, 0x018b5823, 0x00f6592a, 0x0104a92d, 0x01a4b31d, 0x01d6dc5c,
      0x027118fe, 0x007fd814, 0x013cd6e5, 0x0085a4db},
     {0x02666658, 0x01999999, 0x00cccccc, 0x01333333, 0x01999999, 0x00666666,
@@ -18,11 +18,11 @@ CONSTANT ge25519 ALIGN(16) ge25519_basepoint = {
         d
 */
 
-CONSTANT bignum25519 ALIGN(16) ge25519_ecd = {
+__constant__ __align__(16) bignum25519 ge25519_ecd = {
     0x035978a3, 0x00d37284, 0x03156ebd, 0x006a0a0e, 0x0001c029,
     0x0179e898, 0x03a03cbb, 0x01ce7198, 0x02e2b6ff, 0x01480db3};
 
-CONSTANT bignum25519 ALIGN(16) ge25519_ec2d = {
+__constant__ __align__(16) bignum25519 ge25519_ec2d = {
     0x02b2f159, 0x01a6e509, 0x022add7a, 0x00d4141d, 0x00038052,
     0x00f3d130, 0x03407977, 0x019ce331, 0x01c56dff, 0x00901b67};
 
@@ -30,11 +30,11 @@ CONSTANT bignum25519 ALIGN(16) ge25519_ec2d = {
         sqrt(-1)
 */
 
-CONSTANT bignum25519 ALIGN(16) ge25519_sqrtneg1 = {
+__constant__ __align__(16) bignum25519 ge25519_sqrtneg1 = {
     0x020ea0b0, 0x0186c9d2, 0x008f189d, 0x0035697f, 0x00bd0c60,
     0x01fbd7a7, 0x02804c9e, 0x01e16569, 0x0004fc1d, 0x00ae0c92};
 
-CONSTANT ge25519_niels ALIGN(16) ge25519_niels_sliding_multiples[32] = {
+__constant__ __align__(16) ge25519_niels ge25519_niels_sliding_multiples[32] = {
     {{0x0340913e, 0x000e4175, 0x03d673a2, 0x002e8a05, 0x03f4e67c, 0x008f8a09,
       0x00c21a34, 0x004cf4b8, 0x01298f81, 0x0113f4be},
      {0x018c3b85, 0x0124f1bd, 0x01c325f7, 0x0037dc60, 0x033e4cb7, 0x003d42c2,
@@ -228,4 +228,4 @@ CONSTANT ge25519_niels ALIGN(16) ge25519_niels_sliding_multiples[32] = {
      {0x0120b962, 0x0005fb42, 0x0353b6fd, 0x0061f8ce, 0x007a1463, 0x01560a64,
       0x00e0a792, 0x01907c92, 0x013a6622, 0x007b47f1}}};
 
-} // namespace curve25519
+}  // namespace curve25519

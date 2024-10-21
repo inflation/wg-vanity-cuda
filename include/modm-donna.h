@@ -19,8 +19,6 @@
 
 #include <cstdint>
 
-#include <cuda_runtime.h>
-
 #include "common.h"
 
 namespace curve25519 {
@@ -39,18 +37,17 @@ constexpr bignum256modm modm_mu = {0x0a2c131b, 0x3673968c, 0x06329a7e,
                                    0x01885742, 0x3fffeb21, 0x3fffffff,
                                    0x3fffffff, 0x3fffffff, 0x000fffff};
 
-__host__ __device__ static bignum256modm_element_t
-lt_modm(bignum256modm_element_t a, bignum256modm_element_t b) {
+__device__ static bignum256modm_element_t lt_modm(bignum256modm_element_t a,
+                                                  bignum256modm_element_t b) {
   return (a - b) >> 31;
 }
 
-__host__ __device__ static inline uint32_t U8TO32_LE(const unsigned char *p) {
+__device__ static inline uint32_t U8TO32_LE(const unsigned char* p) {
   return (((uint32_t)(p[0])) | ((uint32_t)(p[1]) << 8) |
           ((uint32_t)(p[2]) << 16) | ((uint32_t)(p[3]) << 24));
 }
 
-__host__ __device__ static inline void U32TO8_LE(unsigned char *p,
-                                                 const uint32_t v) {
+__device__ static inline void U32TO8_LE(unsigned char* p, const uint32_t v) {
   p[0] = (unsigned char)(v);
   p[1] = (unsigned char)(v >> 8);
   p[2] = (unsigned char)(v >> 16);
@@ -58,7 +55,7 @@ __host__ __device__ static inline void U32TO8_LE(unsigned char *p,
 }
 
 /* see HAC, Alg. 14.42 Step 4 */
-__host__ __device__ static void reduce256_modm(bignum256modm r) {
+__device__ static void reduce256_modm(bignum256modm r) {
   bignum256modm t;
   bignum256modm_element_t b = 0, pb, mask;
 
@@ -118,9 +115,9 @@ __host__ __device__ static void reduce256_modm(bignum256modm r) {
 
         Instead of passing in x, pre-process in to q1 and r1 for efficiency
 */
-__host__ __device__ static void barrett_reduce256_modm(bignum256modm r,
-                                                       const bignum256modm q1,
-                                                       const bignum256modm r1) {
+__device__ static void barrett_reduce256_modm(bignum256modm r,
+                                              const bignum256modm q1,
+                                              const bignum256modm r1) {
   bignum256modm q3, r2;
   uint64_t c;
   bignum256modm_element_t f, b, pb;
@@ -282,8 +279,9 @@ __host__ __device__ static void barrett_reduce256_modm(bignum256modm r,
 }
 
 /* addition modulo m */
-__host__ __device__ static void
-add256_modm(bignum256modm r, const bignum256modm x, const bignum256modm y) {
+__device__ static void add256_modm(bignum256modm r,
+                                   const bignum256modm x,
+                                   const bignum256modm y) {
   bignum256modm_element_t c;
 
   c = x[0] + y[0];
@@ -317,8 +315,9 @@ add256_modm(bignum256modm r, const bignum256modm x, const bignum256modm y) {
 }
 
 /* multiplication modulo m */
-__host__ __device__ static void
-mul256_modm(bignum256modm r, const bignum256modm x, const bignum256modm y) {
+__device__ static void mul256_modm(bignum256modm r,
+                                   const bignum256modm x,
+                                   const bignum256modm y) {
   bignum256modm r1, q1;
   uint64_t c;
   bignum256modm_element_t f;
@@ -433,8 +432,9 @@ mul256_modm(bignum256modm r, const bignum256modm x, const bignum256modm y) {
   barrett_reduce256_modm(r, q1, r1);
 }
 
-__host__ __device__ static void
-expand256_modm(bignum256modm out, const unsigned char *in, size_t len) {
+__device__ static void expand256_modm(bignum256modm out,
+                                      const unsigned char* in,
+                                      size_t len) {
   unsigned char work[64] = {0};
   bignum256modm_element_t x[16];
   bignum256modm q1;
@@ -486,8 +486,8 @@ expand256_modm(bignum256modm out, const unsigned char *in, size_t len) {
   barrett_reduce256_modm(out, q1, out);
 }
 
-__host__ __device__ static void expand_raw256_modm(bignum256modm out,
-                                                   const unsigned char in[32]) {
+__device__ static void expand_raw256_modm(bignum256modm out,
+                                          const unsigned char in[32]) {
   bignum256modm_element_t x[8];
 
   x[0] = U8TO32_LE(in + 0);
@@ -510,8 +510,8 @@ __host__ __device__ static void expand_raw256_modm(bignum256modm out,
   out[8] = ((x[7] >> 16)) & 0x0000ffff;
 }
 
-__host__ __device__ static void contract256_modm(unsigned char out[32],
-                                                 const bignum256modm in) {
+__device__ static void contract256_modm(unsigned char out[32],
+                                        const bignum256modm in) {
   U32TO8_LE(out + 0, (in[0]) | (in[1] << 30));
   U32TO8_LE(out + 4, (in[1] >> 2) | (in[2] << 28));
   U32TO8_LE(out + 8, (in[2] >> 4) | (in[3] << 26));
@@ -522,10 +522,10 @@ __host__ __device__ static void contract256_modm(unsigned char out[32],
   U32TO8_LE(out + 28, (in[7] >> 14) | (in[8] << 16));
 }
 
-__host__ __device__ static void
-contract256_window4_modm(signed char r[64], const bignum256modm in) {
+__device__ static void contract256_window4_modm(signed char r[64],
+                                                const bignum256modm in) {
   char carry;
-  signed char *quads = r;
+  signed char* quads = r;
   bignum256modm_element_t i, j, v;
 
   for (i = 0; i < 8; i += 2) {
@@ -562,12 +562,12 @@ contract256_window4_modm(signed char r[64], const bignum256modm in) {
   r[63] += carry;
 }
 
-__host__ __device__ static void
-contract256_slidingwindow_modm(signed char r[256], const bignum256modm s,
-                               int windowsize) {
+__device__ static void contract256_slidingwindow_modm(signed char r[256],
+                                                      const bignum256modm s,
+                                                      int windowsize) {
   int i, j, k, b;
   int m = (1 << (windowsize - 1)) - 1, soplen = 256;
-  signed char *bits = r;
+  signed char* bits = r;
   bignum256modm_element_t v;
 
   /* first put the binary expansion into r  */
@@ -610,194 +610,194 @@ contract256_slidingwindow_modm(signed char r[256], const bignum256modm s,
 */
 
 /* out = a - b, a must be larger than b */
-__host__ __device__ static void sub256_modm_batch(bignum256modm out,
-                                                  const bignum256modm a,
-                                                  const bignum256modm b,
-                                                  size_t limbsize) {
+__device__ static void sub256_modm_batch(bignum256modm out,
+                                         const bignum256modm a,
+                                         const bignum256modm b,
+                                         size_t limbsize) {
   size_t i = 0;
   bignum256modm_element_t carry = 0;
   switch (limbsize) {
-  case 8:
-    out[i] = (a[i] - b[i]) - carry;
-    carry = (out[i] >> 31);
-    out[i] &= 0x3fffffff;
-    i++;
-    [[fallthrough]];
-  case 7:
-    out[i] = (a[i] - b[i]) - carry;
-    carry = (out[i] >> 31);
-    out[i] &= 0x3fffffff;
-    i++;
-    [[fallthrough]];
-  case 6:
-    out[i] = (a[i] - b[i]) - carry;
-    carry = (out[i] >> 31);
-    out[i] &= 0x3fffffff;
-    i++;
-    [[fallthrough]];
-  case 5:
-    out[i] = (a[i] - b[i]) - carry;
-    carry = (out[i] >> 31);
-    out[i] &= 0x3fffffff;
-    i++;
-    [[fallthrough]];
-  case 4:
-    out[i] = (a[i] - b[i]) - carry;
-    carry = (out[i] >> 31);
-    out[i] &= 0x3fffffff;
-    i++;
-    [[fallthrough]];
-  case 3:
-    out[i] = (a[i] - b[i]) - carry;
-    carry = (out[i] >> 31);
-    out[i] &= 0x3fffffff;
-    i++;
-    [[fallthrough]];
-  case 2:
-    out[i] = (a[i] - b[i]) - carry;
-    carry = (out[i] >> 31);
-    out[i] &= 0x3fffffff;
-    i++;
-    [[fallthrough]];
-  case 1:
-    out[i] = (a[i] - b[i]) - carry;
-    carry = (out[i] >> 31);
-    out[i] &= 0x3fffffff;
-    i++;
-    [[fallthrough]];
-  case 0:
-    [[fallthrough]];
-  default:
-    out[i] = (a[i] - b[i]) - carry;
+    case 8:
+      out[i] = (a[i] - b[i]) - carry;
+      carry = (out[i] >> 31);
+      out[i] &= 0x3fffffff;
+      i++;
+      [[fallthrough]];
+    case 7:
+      out[i] = (a[i] - b[i]) - carry;
+      carry = (out[i] >> 31);
+      out[i] &= 0x3fffffff;
+      i++;
+      [[fallthrough]];
+    case 6:
+      out[i] = (a[i] - b[i]) - carry;
+      carry = (out[i] >> 31);
+      out[i] &= 0x3fffffff;
+      i++;
+      [[fallthrough]];
+    case 5:
+      out[i] = (a[i] - b[i]) - carry;
+      carry = (out[i] >> 31);
+      out[i] &= 0x3fffffff;
+      i++;
+      [[fallthrough]];
+    case 4:
+      out[i] = (a[i] - b[i]) - carry;
+      carry = (out[i] >> 31);
+      out[i] &= 0x3fffffff;
+      i++;
+      [[fallthrough]];
+    case 3:
+      out[i] = (a[i] - b[i]) - carry;
+      carry = (out[i] >> 31);
+      out[i] &= 0x3fffffff;
+      i++;
+      [[fallthrough]];
+    case 2:
+      out[i] = (a[i] - b[i]) - carry;
+      carry = (out[i] >> 31);
+      out[i] &= 0x3fffffff;
+      i++;
+      [[fallthrough]];
+    case 1:
+      out[i] = (a[i] - b[i]) - carry;
+      carry = (out[i] >> 31);
+      out[i] &= 0x3fffffff;
+      i++;
+      [[fallthrough]];
+    case 0:
+      [[fallthrough]];
+    default:
+      out[i] = (a[i] - b[i]) - carry;
   }
 }
 
 /* is a < b */
-__host__ __device__ static int lt256_modm_batch(const bignum256modm a,
-                                                const bignum256modm b,
-                                                size_t limbsize) {
+__device__ static int lt256_modm_batch(const bignum256modm a,
+                                       const bignum256modm b,
+                                       size_t limbsize) {
   switch (limbsize) {
-  case 8:
-    if (a[8] > b[8])
-      return 0;
-    if (a[8] < b[8])
-      return 1;
-    [[fallthrough]];
-  case 7:
-    if (a[7] > b[7])
-      return 0;
-    if (a[7] < b[7])
-      return 1;
-    [[fallthrough]];
-  case 6:
-    if (a[6] > b[6])
-      return 0;
-    if (a[6] < b[6])
-      return 1;
-    [[fallthrough]];
-  case 5:
-    if (a[5] > b[5])
-      return 0;
-    if (a[5] < b[5])
-      return 1;
-    [[fallthrough]];
-  case 4:
-    if (a[4] > b[4])
-      return 0;
-    if (a[4] < b[4])
-      return 1;
-    [[fallthrough]];
-  case 3:
-    if (a[3] > b[3])
-      return 0;
-    if (a[3] < b[3])
-      return 1;
-    [[fallthrough]];
-  case 2:
-    if (a[2] > b[2])
-      return 0;
-    if (a[2] < b[2])
-      return 1;
-    [[fallthrough]];
-  case 1:
-    if (a[1] > b[1])
-      return 0;
-    if (a[1] < b[1])
-      return 1;
-    [[fallthrough]];
-  case 0:
-    if (a[0] > b[0])
-      return 0;
-    if (a[0] < b[0])
-      return 1;
+    case 8:
+      if (a[8] > b[8])
+        return 0;
+      if (a[8] < b[8])
+        return 1;
+      [[fallthrough]];
+    case 7:
+      if (a[7] > b[7])
+        return 0;
+      if (a[7] < b[7])
+        return 1;
+      [[fallthrough]];
+    case 6:
+      if (a[6] > b[6])
+        return 0;
+      if (a[6] < b[6])
+        return 1;
+      [[fallthrough]];
+    case 5:
+      if (a[5] > b[5])
+        return 0;
+      if (a[5] < b[5])
+        return 1;
+      [[fallthrough]];
+    case 4:
+      if (a[4] > b[4])
+        return 0;
+      if (a[4] < b[4])
+        return 1;
+      [[fallthrough]];
+    case 3:
+      if (a[3] > b[3])
+        return 0;
+      if (a[3] < b[3])
+        return 1;
+      [[fallthrough]];
+    case 2:
+      if (a[2] > b[2])
+        return 0;
+      if (a[2] < b[2])
+        return 1;
+      [[fallthrough]];
+    case 1:
+      if (a[1] > b[1])
+        return 0;
+      if (a[1] < b[1])
+        return 1;
+      [[fallthrough]];
+    case 0:
+      if (a[0] > b[0])
+        return 0;
+      if (a[0] < b[0])
+        return 1;
   }
   return 0;
 }
 
 /* is a <= b */
-__host__ __device__ static int lte256_modm_batch(const bignum256modm a,
-                                                 const bignum256modm b,
-                                                 size_t limbsize) {
+__device__ static int lte256_modm_batch(const bignum256modm a,
+                                        const bignum256modm b,
+                                        size_t limbsize) {
   switch (limbsize) {
-  case 8:
-    if (a[8] > b[8])
-      return 0;
-    if (a[8] < b[8])
-      return 1;
-    [[fallthrough]];
-  case 7:
-    if (a[7] > b[7])
-      return 0;
-    if (a[7] < b[7])
-      return 1;
-    [[fallthrough]];
-  case 6:
-    if (a[6] > b[6])
-      return 0;
-    if (a[6] < b[6])
-      return 1;
-    [[fallthrough]];
-  case 5:
-    if (a[5] > b[5])
-      return 0;
-    if (a[5] < b[5])
-      return 1;
-    [[fallthrough]];
-  case 4:
-    if (a[4] > b[4])
-      return 0;
-    if (a[4] < b[4])
-      return 1;
-    [[fallthrough]];
-  case 3:
-    if (a[3] > b[3])
-      return 0;
-    if (a[3] < b[3])
-      return 1;
-    [[fallthrough]];
-  case 2:
-    if (a[2] > b[2])
-      return 0;
-    if (a[2] < b[2])
-      return 1;
-    [[fallthrough]];
-  case 1:
-    if (a[1] > b[1])
-      return 0;
-    if (a[1] < b[1])
-      return 1;
-    [[fallthrough]];
-  case 0:
-    if (a[0] > b[0])
-      return 0;
-    if (a[0] < b[0])
-      return 1;
+    case 8:
+      if (a[8] > b[8])
+        return 0;
+      if (a[8] < b[8])
+        return 1;
+      [[fallthrough]];
+    case 7:
+      if (a[7] > b[7])
+        return 0;
+      if (a[7] < b[7])
+        return 1;
+      [[fallthrough]];
+    case 6:
+      if (a[6] > b[6])
+        return 0;
+      if (a[6] < b[6])
+        return 1;
+      [[fallthrough]];
+    case 5:
+      if (a[5] > b[5])
+        return 0;
+      if (a[5] < b[5])
+        return 1;
+      [[fallthrough]];
+    case 4:
+      if (a[4] > b[4])
+        return 0;
+      if (a[4] < b[4])
+        return 1;
+      [[fallthrough]];
+    case 3:
+      if (a[3] > b[3])
+        return 0;
+      if (a[3] < b[3])
+        return 1;
+      [[fallthrough]];
+    case 2:
+      if (a[2] > b[2])
+        return 0;
+      if (a[2] < b[2])
+        return 1;
+      [[fallthrough]];
+    case 1:
+      if (a[1] > b[1])
+        return 0;
+      if (a[1] < b[1])
+        return 1;
+      [[fallthrough]];
+    case 0:
+      if (a[0] > b[0])
+        return 0;
+      if (a[0] < b[0])
+        return 1;
   }
   return 1;
 }
 
 /* is a == 0 */
-__host__ __device__ static int iszero256_modm_batch(const bignum256modm a) {
+__device__ static int iszero256_modm_batch(const bignum256modm a) {
   size_t i;
   for (i = 0; i < 9; i++)
     if (a[i])
@@ -806,7 +806,7 @@ __host__ __device__ static int iszero256_modm_batch(const bignum256modm a) {
 }
 
 /* is a == 1 */
-__host__ __device__ static int isone256_modm_batch(const bignum256modm a) {
+__device__ static int isone256_modm_batch(const bignum256modm a) {
   size_t i;
   if (a[0] != 1)
     return 0;
@@ -817,8 +817,7 @@ __host__ __device__ static int isone256_modm_batch(const bignum256modm a) {
 }
 
 /* can a fit in to (at most) 128 bits */
-__host__ __device__ static int
-isatmost128bits256_modm_batch(const bignum256modm a) {
+__device__ static int isatmost128bits256_modm_batch(const bignum256modm a) {
   uint32_t mask = ((a[8]) |              /*  16 */
                    (a[7]) |              /*  46 */
                    (a[6]) |              /*  76 */
@@ -828,4 +827,4 @@ isatmost128bits256_modm_batch(const bignum256modm a) {
   return (mask == 0);
 }
 
-} // namespace curve25519
+}  // namespace curve25519

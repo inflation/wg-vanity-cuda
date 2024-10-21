@@ -19,8 +19,7 @@ constexpr uint32_t reduce_mask_25 = (1 << 25) - 1;
 constexpr uint32_t reduce_mask_26 = (1 << 26) - 1;
 
 /* out = in */
-__host__ __device__ static void curve25519_copy(bignum25519 out,
-                                                const bignum25519 in) {
+__device__ static void curve25519_copy(bignum25519 out, const bignum25519 in) {
   out[0] = in[0];
   out[1] = in[1];
   out[2] = in[2];
@@ -34,8 +33,9 @@ __host__ __device__ static void curve25519_copy(bignum25519 out,
 }
 
 /* out = a + b */
-__host__ __device__ static void
-curve25519_add(bignum25519 out, const bignum25519 a, const bignum25519 b) {
+__device__ static void curve25519_add(bignum25519 out,
+                                      const bignum25519 a,
+                                      const bignum25519 b) {
   out[0] = a[0] + b[0];
   out[1] = a[1] + b[1];
   out[2] = a[2] + b[2];
@@ -48,9 +48,9 @@ curve25519_add(bignum25519 out, const bignum25519 a, const bignum25519 b) {
   out[9] = a[9] + b[9];
 }
 
-__host__ __device__ static void
-curve25519_add_after_basic(bignum25519 out, const bignum25519 a,
-                           const bignum25519 b) {
+__device__ static void curve25519_add_after_basic(bignum25519 out,
+                                                  const bignum25519 a,
+                                                  const bignum25519 b) {
   uint32_t c;
   out[0] = a[0] + b[0];
   c = (out[0] >> 26);
@@ -85,9 +85,9 @@ curve25519_add_after_basic(bignum25519 out, const bignum25519 a,
   out[0] += 19 * c;
 }
 
-__host__ __device__ static void curve25519_add_reduce(bignum25519 out,
-                                                      const bignum25519 a,
-                                                      const bignum25519 b) {
+__device__ static void curve25519_add_reduce(bignum25519 out,
+                                             const bignum25519 a,
+                                             const bignum25519 b) {
   uint32_t c;
   out[0] = a[0] + b[0];
   c = (out[0] >> 26);
@@ -131,8 +131,9 @@ constexpr uint32_t fourP13579 = 0x07fffffc;
 constexpr uint32_t fourP2468 = 0x0ffffffc;
 
 /* out = a - b */
-__host__ __device__ static void
-curve25519_sub(bignum25519 out, const bignum25519 a, const bignum25519 b) {
+__device__ static void curve25519_sub(bignum25519 out,
+                                      const bignum25519 a,
+                                      const bignum25519 b) {
   uint32_t c;
   out[0] = twoP0 + a[0] - b[0];
   c = (out[0] >> 26);
@@ -155,9 +156,9 @@ curve25519_sub(bignum25519 out, const bignum25519 a, const bignum25519 b) {
 }
 
 /* out = a - b, where a is the result of a basic op (add,sub) */
-__host__ __device__ static void
-curve25519_sub_after_basic(bignum25519 out, const bignum25519 a,
-                           const bignum25519 b) {
+__device__ static void curve25519_sub_after_basic(bignum25519 out,
+                                                  const bignum25519 a,
+                                                  const bignum25519 b) {
   uint32_t c;
   out[0] = fourP0 + a[0] - b[0];
   c = (out[0] >> 26);
@@ -192,9 +193,9 @@ curve25519_sub_after_basic(bignum25519 out, const bignum25519 a,
   out[0] += 19 * c;
 }
 
-__host__ __device__ static void curve25519_sub_reduce(bignum25519 out,
-                                                      const bignum25519 a,
-                                                      const bignum25519 b) {
+__device__ static void curve25519_sub_reduce(bignum25519 out,
+                                             const bignum25519 a,
+                                             const bignum25519 b) {
   uint32_t c;
   out[0] = fourP0 + a[0] - b[0];
   c = (out[0] >> 26);
@@ -230,8 +231,7 @@ __host__ __device__ static void curve25519_sub_reduce(bignum25519 out,
 }
 
 /* out = -a */
-__host__ __device__ static void curve25519_neg(bignum25519 out,
-                                               const bignum25519 a) {
+__device__ static void curve25519_neg(bignum25519 out, const bignum25519 a) {
   uint32_t c;
   out[0] = twoP0 - a[0];
   c = (out[0] >> 26);
@@ -268,8 +268,9 @@ __host__ __device__ static void curve25519_neg(bignum25519 out,
 
 /* out = a * b */
 #define curve25519_mul_noinline curve25519_mul
-__host__ __device__ static void
-curve25519_mul(bignum25519 out, const bignum25519 a, const bignum25519 b) {
+__device__ static void curve25519_mul(bignum25519 out,
+                                      const bignum25519 a,
+                                      const bignum25519 b) {
   uint32_t r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
   uint32_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9;
   uint64_t m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, c;
@@ -408,8 +409,8 @@ curve25519_mul(bignum25519 out, const bignum25519 a, const bignum25519 b) {
 }
 
 /* out = in*in */
-__host__ __device__ static void curve25519_square(bignum25519 out,
-                                                  const bignum25519 in) {
+__device__ static void curve25519_square(bignum25519 out,
+                                         const bignum25519 in) {
   uint32_t r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
   uint32_t d6, d7, d8, d9;
   uint64_t m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, c;
@@ -511,8 +512,9 @@ __host__ __device__ static void curve25519_square(bignum25519 out,
 }
 
 /* out = in ^ (2 * count) */
-__host__ __device__ static void
-curve25519_square_times(bignum25519 out, const bignum25519 in, int count) {
+__device__ static void curve25519_square_times(bignum25519 out,
+                                               const bignum25519 in,
+                                               int count) {
   uint32_t r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
   uint32_t d6, d7, d8, d9;
   uint64_t m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, c;
@@ -616,8 +618,8 @@ curve25519_square_times(bignum25519 out, const bignum25519 in, int count) {
 }
 
 /* Take a little-endian, 32-byte number and expand it into polynomial form */
-__host__ __device__ static void curve25519_expand(bignum25519 out,
-                                                  const unsigned char in[32]) {
+__device__ static void curve25519_expand(bignum25519 out,
+                                         const unsigned char in[32]) {
   static const union {
     uint8_t b[2];
     uint16_t s;
@@ -625,17 +627,17 @@ __host__ __device__ static void curve25519_expand(bignum25519 out,
   uint32_t x0, x1, x2, x3, x4, x5, x6, x7;
 
   if (endian_check.s == 1) {
-    x0 = *(uint32_t *)(in + 0);
-    x1 = *(uint32_t *)(in + 4);
-    x2 = *(uint32_t *)(in + 8);
-    x3 = *(uint32_t *)(in + 12);
-    x4 = *(uint32_t *)(in + 16);
-    x5 = *(uint32_t *)(in + 20);
-    x6 = *(uint32_t *)(in + 24);
-    x7 = *(uint32_t *)(in + 28);
+    x0 = *(uint32_t*)(in + 0);
+    x1 = *(uint32_t*)(in + 4);
+    x2 = *(uint32_t*)(in + 8);
+    x3 = *(uint32_t*)(in + 12);
+    x4 = *(uint32_t*)(in + 16);
+    x5 = *(uint32_t*)(in + 20);
+    x6 = *(uint32_t*)(in + 24);
+    x7 = *(uint32_t*)(in + 28);
   } else {
-#define F(s)                                                                   \
-  ((((uint32_t)in[s + 0])) | (((uint32_t)in[s + 1]) << 8) |                    \
+#define F(s)                                                \
+  ((((uint32_t)in[s + 0])) | (((uint32_t)in[s + 1]) << 8) | \
    (((uint32_t)in[s + 2]) << 16) | (((uint32_t)in[s + 3]) << 24))
     x0 = F(0);
     x1 = F(4);
@@ -663,33 +665,33 @@ __host__ __device__ static void curve25519_expand(bignum25519 out,
 /* Take a fully reduced polynomial form number and contract it into a
  * little-endian, 32-byte array
  */
-__host__ __device__ static void curve25519_contract(unsigned char out[32],
-                                                    const bignum25519 in) {
+__device__ static void curve25519_contract(unsigned char out[32],
+                                           const bignum25519 in) {
   bignum25519 f;
   curve25519_copy(f, in);
 
-#define carry_pass()                                                           \
-  f[1] += f[0] >> 26;                                                          \
-  f[0] &= reduce_mask_26;                                                      \
-  f[2] += f[1] >> 25;                                                          \
-  f[1] &= reduce_mask_25;                                                      \
-  f[3] += f[2] >> 26;                                                          \
-  f[2] &= reduce_mask_26;                                                      \
-  f[4] += f[3] >> 25;                                                          \
-  f[3] &= reduce_mask_25;                                                      \
-  f[5] += f[4] >> 26;                                                          \
-  f[4] &= reduce_mask_26;                                                      \
-  f[6] += f[5] >> 25;                                                          \
-  f[5] &= reduce_mask_25;                                                      \
-  f[7] += f[6] >> 26;                                                          \
-  f[6] &= reduce_mask_26;                                                      \
-  f[8] += f[7] >> 25;                                                          \
-  f[7] &= reduce_mask_25;                                                      \
-  f[9] += f[8] >> 26;                                                          \
+#define carry_pass()      \
+  f[1] += f[0] >> 26;     \
+  f[0] &= reduce_mask_26; \
+  f[2] += f[1] >> 25;     \
+  f[1] &= reduce_mask_25; \
+  f[3] += f[2] >> 26;     \
+  f[2] &= reduce_mask_26; \
+  f[4] += f[3] >> 25;     \
+  f[3] &= reduce_mask_25; \
+  f[5] += f[4] >> 26;     \
+  f[4] &= reduce_mask_26; \
+  f[6] += f[5] >> 25;     \
+  f[5] &= reduce_mask_25; \
+  f[7] += f[6] >> 26;     \
+  f[6] &= reduce_mask_26; \
+  f[8] += f[7] >> 25;     \
+  f[7] &= reduce_mask_25; \
+  f[9] += f[8] >> 26;     \
   f[8] &= reduce_mask_26;
 
-#define carry_pass_full()                                                      \
-  carry_pass() f[0] += 19 * (f[9] >> 25);                                      \
+#define carry_pass_full()                 \
+  carry_pass() f[0] += 19 * (f[9] >> 25); \
   f[9] &= reduce_mask_25;
 
 #define carry_pass_final() carry_pass() f[9] &= reduce_mask_25;
@@ -730,10 +732,10 @@ __host__ __device__ static void curve25519_contract(unsigned char out[32],
   f[8] <<= 4;
   f[9] <<= 6;
 
-#define F(i, s)                                                                \
-  out[s + 0] |= (unsigned char)(f[i] & 0xff);                                  \
-  out[s + 1] = (unsigned char)((f[i] >> 8) & 0xff);                            \
-  out[s + 2] = (unsigned char)((f[i] >> 16) & 0xff);                           \
+#define F(i, s)                                      \
+  out[s + 0] |= (unsigned char)(f[i] & 0xff);        \
+  out[s + 1] = (unsigned char)((f[i] >> 8) & 0xff);  \
+  out[s + 2] = (unsigned char)((f[i] >> 16) & 0xff); \
   out[s + 3] = (unsigned char)((f[i] >> 24) & 0xff);
 
   out[0] = 0;
@@ -752,12 +754,12 @@ __host__ __device__ static void curve25519_contract(unsigned char out[32],
 }
 
 /* out = (flag) ? in : out */
-__host__ __device__ static void
-curve25519_move_conditional_bytes(uint8_t out[96], const uint8_t in[96],
-                                  uint32_t flag) {
+__device__ static void curve25519_move_conditional_bytes(uint8_t out[96],
+                                                         const uint8_t in[96],
+                                                         uint32_t flag) {
   const uint32_t nb = flag - 1, b = ~nb;
-  const uint32_t *inl = (const uint32_t *)in;
-  uint32_t *outl = (uint32_t *)out;
+  const uint32_t* inl = (const uint32_t*)in;
+  uint32_t* outl = (uint32_t*)out;
   outl[0] = (outl[0] & nb) | (inl[0] & b);
   outl[1] = (outl[1] & nb) | (inl[1] & b);
   outl[2] = (outl[2] & nb) | (inl[2] & b);
@@ -785,8 +787,9 @@ curve25519_move_conditional_bytes(uint8_t out[96], const uint8_t in[96],
 }
 
 /* if (iswap) swap(a, b) */
-__host__ __device__ static void
-curve25519_swap_conditional(bignum25519 a, bignum25519 b, uint32_t iswap) {
+__device__ static void curve25519_swap_conditional(bignum25519 a,
+                                                   bignum25519 b,
+                                                   uint32_t iswap) {
   const uint32_t swap = (uint32_t)(-(int32_t)iswap);
   uint32_t x0, x1, x2, x3, x4, x5, x6, x7, x8, x9;
 
@@ -822,4 +825,4 @@ curve25519_swap_conditional(bignum25519 a, bignum25519 b, uint32_t iswap) {
   b[9] ^= x9;
 }
 
-} // namespace curve25519
+}  // namespace curve25519

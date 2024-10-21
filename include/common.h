@@ -4,22 +4,14 @@
 
 #define mul32x32_64(a, b) ((uint64_t)(a) * (b))
 
-#ifdef _MSC_VER
-#define ALIGN(x) __declspec(align(x))
-#else
-#define ALIGN(x) __attribute__((aligned(x)))
-#endif
-
-#ifdef __CUDA_ARCH__
-#define CONSTANT __constant__
-#else
-#define CONSTANT static const
+#ifdef __INTELLISENSE__
+#define __CUDACC__
 #endif
 
 namespace curve25519 {
 
 typedef uint32_t bignum25519[10];
-typedef uint32_t bignum25519align16[12];
+// typedef uint32_t bignum25519align16[12];
 
 /*
  * Arithmetic on the twisted Edwards curve -x^2 + y^2 = 1 + dx^2y^2
@@ -45,10 +37,13 @@ typedef struct ge25519_pniels_t {
   bignum25519 ysubx, xaddy, z, t2d;
 } ge25519_pniels;
 
-constexpr auto key_len = 32;
-constexpr auto encoded_len = (key_len + 2) / 3 * 4;
+constexpr auto KEY_LEN = 32;
+constexpr auto KEY_LEN_BASE64 = (KEY_LEN + 2) / 3 * 4;
 
-typedef uint8_t curved25519_key[key_len];
-typedef uint8_t encoded_key[encoded_len];
+typedef uint8_t curved25519_key[KEY_LEN];
+typedef uint8_t encoded_key[KEY_LEN_BASE64];
 
-} // namespace curve25519
+}  // namespace curve25519
+
+void checkCudaError(cudaError_t error);
+void checkLastCudaError();
