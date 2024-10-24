@@ -1,5 +1,8 @@
 build/
 .cache/
+cmake-build-*/
+
 .vscode/
+.idea/
 .vs/
 compile_commands.json

@@ -1,10 +1,13 @@
+#include <cstdint>
+
 #include <cuda_runtime.h>
 
-#include "common.h"
+#include "base64.h"
+
+using namespace curve25519;
 
 namespace base64 {
 
-using namespace curve25519;
 
 __constant__ uint8_t base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                       "abcdefghijklmnopqrstuvwxyz"
@@ -18,8 +21,8 @@ __constant__ uint8_t from_base64[] = {
 
 __device__ void encode(const curved25519_key key, encoded_key out) {
   for (int i = 0, j = 0; i < KEY_LEN;) {
-    uint32_t octet_a = i < KEY_LEN ? key[i++] : 0;
-    uint32_t octet_b = i < KEY_LEN ? key[i++] : 0;
+    uint32_t octet_a = key[i++];
+    uint32_t octet_b = key[i++];
     uint32_t octet_c = i < KEY_LEN ? key[i++] : 0;
 
     uint32_t triple = (octet_a << 16) | (octet_b << 8) | octet_c;
@@ -49,4 +52,5 @@ __device__ void decode(const encoded_key key, curved25519_key out) {
   }
 }
 
-} // namespace base64
+
+}  // namespace base64

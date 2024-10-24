@@ -1,12 +1,11 @@
 #pragma once
 
 #include <cstdint>
+#include <source_location>
+
+#include <fmt/base.h>
 
 #define mul32x32_64(a, b) ((uint64_t)(a) * (b))
-
-#ifdef __INTELLISENSE__
-#define __CUDACC__
-#endif
 
 namespace curve25519 {
 
@@ -43,7 +42,22 @@ constexpr auto KEY_LEN_BASE64 = (KEY_LEN + 2) / 3 * 4;
 typedef uint8_t curved25519_key[KEY_LEN];
 typedef uint8_t encoded_key[KEY_LEN_BASE64];
 
-}  // namespace curve25519
+} // namespace curve25519
 
-void checkCudaError(cudaError_t error);
-void checkLastCudaError();
+inline void checkCudaError(
+    const cudaError_t error,
+    const std::source_location &location = std::source_location::current()) {
+  if (error != cudaSuccess) {
+    fmt::println("CUDA error at {}:{} : \n\t{}\nin {}", location.file_name(),
+                 location.line(), cudaGetErrorString(error),
+                 location.function_name());
+    exit(EXIT_FAILURE);
+  }
+}
+
+inline void checkLastCudaError() { checkCudaError(cudaGetLastError()); }
+
+constexpr size_t operator""_MB(const size_t x) { return 1024 * 1024 * x; }
+constexpr size_t operator""_GB(const size_t x) {
+  return 1024 * 1024 * 1024 * x;
+}

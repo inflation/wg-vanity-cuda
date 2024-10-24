@@ -1,8 +1,5 @@
-#include <cuda_runtime.h>
-
-#include "common.h"
-#include "ed25519-donna.h"
 #include "pubkey.h"
+#include "ed25519-donna.h"
 
 namespace curve25519 {
 
@@ -11,11 +8,11 @@ __device__ void pubkey(curved25519_key pk, const curved25519_key e) {
   bignum256modm s;
   bignum25519 __align__(16) yplusz, zminusy;
   ge25519 __align__(16) p;
-  size_t i;
 
   /* clamp */
-  for (i = 0; i < 32; i++)
-    ec[i] = e[i];
+  // for (auto i = 0; i < KEY_LEN; i++)
+    // ec[i] = e[i];
+  memcpy(ec, e, KEY_LEN);
   ec[0] &= 248;
   ec[31] &= 127;
   ec[31] |= 64;
@@ -33,4 +30,4 @@ __device__ void pubkey(curved25519_key pk, const curved25519_key e) {
   curve25519_contract(pk, yplusz);
 }
 
-}  // namespace curve25519
+} // namespace curve25519
