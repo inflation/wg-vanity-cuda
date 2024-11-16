@@ -1,9 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <iostream>
 #include <source_location>
-
-#include <fmt/base.h>
 
 #define mul32x32_64(a, b) ((uint64_t)(a) * (b))
 
@@ -48,9 +47,10 @@ inline void checkCudaError(
     const cudaError_t error,
     const std::source_location &location = std::source_location::current()) {
   if (error != cudaSuccess) {
-    fmt::println("CUDA error at {}:{} : \n\t{}\nin {}", location.file_name(),
-                 location.line(), cudaGetErrorString(error),
-                 location.function_name());
+    std::cerr << "CUDA error at" << location.file_name() << ":"
+              << location.line() << ":"
+              << "\n\t" << cudaGetErrorString(error) << "\nin"
+              << location.function_name() << std::endl;
     exit(EXIT_FAILURE);
   }
 }

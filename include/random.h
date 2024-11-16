@@ -7,6 +7,7 @@
 
 #include <aegis.h>
 #include <aegis128x4.h>
+#include <cuda_runtime.h>
 
 #include "common.h"
 
@@ -32,7 +33,7 @@ static auto generate_seed() {
   const auto status = BCryptGenRandom(nullptr, seed.data(), seed_size,
                                       BCRYPT_USE_SYSTEM_PREFERRED_RNG);
   if (!BCRYPT_SUCCESS(status)) {
-    fmt::println("BCryptGenRandom failed");
+    std::cerr << "BCryptGenRandom failed" << std::endl;
     exit(EXIT_FAILURE);
   }
   return seed;

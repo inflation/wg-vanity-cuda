@@ -7,11 +7,12 @@
 #include "common.h"
 #include "pubkey.h"
 #include "random.h"
+#include "vanity.h"
 
 using namespace curve25519;
 
 __constant__ uint8_t vanity_str[KEY_LEN_BASE64];
-__device__ uint32_t foundKeys = 0;
+__device__ uint32_t foundKeys = 1;
 
 __global__ void vanity(size_t vanity_len, const uint8_t *__restrict d_keys,
                        size_t key_mem_size) {
@@ -44,34 +45,17 @@ __global__ void vanity(size_t vanity_len, const uint8_t *__restrict d_keys,
   }
 }
 
-int main(int argc, char **argv) {
-  init();
-
-  if (argc < 2) {
-    fmt::println(stderr, "Usage: {} <vanity> [THREADS] [ROUNDS]", argv[0]);
-    exit(EXIT_FAILURE);
-  }
-
-  char *str = argv[1];
-  size_t len = strlen(str);
-  printf("String: %s, Length: %zu\n", str, len);
-
-  checkCudaError(cudaMemcpyToSymbol(vanity_str, str, len));
-
+void find_pubkey(char *str, int len, int rounds, int mem, int threads) {
   int blockSize, minGridSize;
   checkCudaError(
       cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, vanity));
-  fmt::println("blockSize: {}, minGridSize: {}", blockSize, minGridSize);
-
-  uint32_t rounds = argc == 3 ? atoi(argv[2]) : 10;
-  uint32_t threads =
-      argc == 4 ? atoi(argv[4]) : std::thread::hardware_concurrency();
+  checkCudaError(cudaMemcpyToSymbol(vanity_str, str, len));
 
   std::vector<std::thread> workers;
 
   for (auto i = 0; i < threads; i++) {
     workers.emplace_back([=]() {
-      randState state(0, 100_MB);
+      randState state(0, mem * 1_MB);
 
       for (auto j = 0; j < rounds; j++) {
         generate(state);
@@ -88,5 +72,4 @@ int main(int argc, char **argv) {
 
   checkCudaError(cudaDeviceSynchronize());
   checkCudaError(cudaDeviceReset());
-  return 0;
 }
